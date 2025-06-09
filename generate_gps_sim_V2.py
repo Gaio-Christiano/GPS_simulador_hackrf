@@ -1,15 +1,15 @@
-import requests
-import datetime
-import os
-import subprocess
-import shutil
-import gzip
-import sys # Importa sys para verificar a versão do Python e sair elegantemente
+import requests # Usado para fazer requisições HTTP (baixar arquivos da internet)
+import datetime # Usado para trabalhar com datas e horas
+import os # Usado para interagir com o sistema operacional (caminhos de arquivos, diretórios)
+import subprocess # Usado para executar comandos externos (o programa gps-sdr-sim.exe)
+import shutil # Usado para operações de alto nível em arquivos e coleções de arquivos (copiar, mover)
+import gzip # Usado para descompactar arquivos gzip (arquivos .Z da NASA)
+import sys # Usado para interagir com o interpretador Python (ex: sair do script)
 
 # --- CONFIGURAÇÕES GLOBAIS ---
 # Definir um caminho padrão para o executável gps-sdr-sim.exe.
 # Este é um bom lugar para começar a procurar. Se não for encontrado aqui, o script perguntará ao usuário.
-# O 'r' antes da string é para tratar a string como "raw" e evitar problemas com barras invertidas.
+# O 'r' antes da string é para tratar a string como "raw" e evitar problemas com barras invertidas em caminhos do Windows.
 DEFAULT_GPS_SDR_SIM_EXECUTABLE = r"C:\Users\Public\gps-sdr-sim-win\gps-sdr-sim.exe" # Um local comum e acessível para todos os usuários
 
 # URL base para download dos arquivos de efemérides da NASA
@@ -20,7 +20,7 @@ NASA_CDDIS_URL = "https://cddis.nasa.gov/archive/gnss/data/daily/"
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gps_sim_output")
 
 # Taxa de amostragem e frequência central para o HackRF (não mude, são padrões para GPS L1).
-# Estes valores são fixos para a simulação de GPS L1.
+# Estes valores são fixos para a simulação de GPS L1 e não devem ser alterados.
 SAMPLE_RATE = 2600000       # 2.6 MHz (taxa de amostragem em Hertz)
 CENTER_FREQUENCY = 1575420000 # 1575.42 MHz (frequência central em Hertz para GPS L1)
 
@@ -55,16 +55,22 @@ def validate_path(prompt, default_path=None):
 def get_user_coordinates():
     """
     Solicita ao usuário as coordenadas de latitude, longitude e altitude.
-    Valida as entradas para garantir que são números.
+    Valida as entradas para garantir que são números e lida com vírgulas.
     """
     while True:
         try:
-            latitude = float(input("Digite a Latitude (Ex: -22.9519 para o Cristo Redentor): "))
-            longitude = float(input("Digite a Longitude (Ex: -43.2105 para o Cristo Redentor): "))
-            altitude = float(input("Digite a Altitude em metros (Ex: 710 para o Cristo Redentor): "))
+            # Substitui vírgulas por pontos para garantir a conversão correta para float.
+            latitude_str = input("Digite a Latitude (Ex: -22.9519 para o Cristo Redentor): ").replace(',', '.')
+            longitude_str = input("Digite a Longitude (Ex: -43.2105 para o Cristo Redentor): ").replace(',', '.')
+            altitude_str = input("Digite a Altitude em metros (Ex: 710 para o Cristo Redentor): ").replace(',', '.')
+
+            latitude = float(latitude_str)
+            longitude = float(longitude_str)
+            altitude = float(altitude_str)
             return latitude, longitude, altitude
         except ValueError:
             print("Entrada inválida. Por favor, digite apenas números para latitude, longitude e altitude.")
+            print("Use ponto (.) como separador decimal, não vírgula (,).") # Adiciona instrução clara sobre o separador decimal
 
 def get_user_datetime():
     """
@@ -165,7 +171,9 @@ def generate_gps_file(gps_sdr_sim_exe_path, ephemeris_file_path, latitude, longi
     print(f"Executando comando: {' '.join(command)}")
 
     try:
-        process = subprocess.run(command, capture_output=True, text=True, check=True)
+        # Aumenta o timeout para 300 segundos (5 minutos) para simulações mais longas.
+        # gps-sdr-sim pode demorar para gerar o arquivo dependendo da duração da simulação.
+        process = subprocess.run(command, capture_output=True, text=True, check=True, timeout=300) 
         print("Saída do gps-sdr-sim:")
         print(process.stdout)
         if process.stderr:
@@ -180,6 +188,11 @@ def generate_gps_file(gps_sdr_sim_exe_path, ephemeris_file_path, latitude, longi
         print(f"ERRO ao executar gps-sdr-sim. Código de saída: {e.returncode}")
         print(f"Erro de saída (stderr): {e.stderr}")
         print("Verifique se os parâmetros estão corretos ou se o arquivo .n foi baixado sem problemas.")
+        print("Para depuração, tente executar o gps-sdr-sim manualmente com os mesmos parâmetros no terminal.")
+        return None
+    except subprocess.TimeoutExpired:
+        print(f"ERRO: O gps-sdr-sim não respondeu dentro do tempo limite de 300 segundos.")
+        print("A simulação pode ser muito longa ou o programa travou. Tente diminuir a duração da simulação.")
         return None
     except Exception as e:
         print(f"Ocorreu um erro inesperado ao executar gps-sdr-sim: {e}")
@@ -243,7 +256,8 @@ def main():
     Função principal que orquestra todo o processo de geração e cópia dos arquivos.
     """
     print("--- Início da Simulação GPS Automatizada no Windows ---")
-    print("Este script irá gerar arquivos .c8 e .txt para seu PortaPack H2M com base nas suas entradas.")
+    print("Este script é para **fins de estudo e proteção contra simulação de GPS**.")
+    print("Ele irá gerar arquivos .c8 e .txt para seu PortaPack H2M com base nas suas entradas.")
 
     # 1. Verifica e obtém o caminho para o executável gps-sdr-sim.exe
     # Se o caminho padrão não funcionar, ele solicitará ao usuário.
