@@ -92,6 +92,7 @@ def download_ephemeris_file(target_date, output_path):
     Baixa o arquivo de efemérides (Broadcast Ephemeris) da NASA para a data alvo.
     Tenta baixar o arquivo .n (não comprimido) primeiro.
     Se falhar, tenta o .n.Z (comprimido em gzip) e descompacta.
+    Retorna o caminho do arquivo baixado/descompactado ou None em caso de falha.
     """
     year = target_date.year
     day_of_year = get_day_of_year(target_date)
@@ -112,7 +113,7 @@ def download_ephemeris_file(target_date, output_path):
     print(f"\nTentando baixar arquivo de efemérides (não comprimido): {url_n}")
     try:
         # Tenta baixar a versão não comprimida (.n)
-        response = requests.get(url_n, stream=True)
+        response = requests.get(url_n, stream=True, timeout=10) # Adiciona timeout de 10 segundos
         response.raise_for_status() # Lança um erro para status de erro (4xx, 5xx)
         with open(output_path, 'wb') as f:
             for chunk in response.iter_content(chunk_size=8192):
@@ -124,7 +125,7 @@ def download_ephemeris_file(target_date, output_path):
         print(f"Tentando baixar a versão comprimida (.Z): {url_n_gz}")
         try:
             # Tenta baixar a versão comprimida (.n.Z)
-            response = requests.get(url_n_gz, stream=True)
+            response = requests.get(url_n_gz, stream=True, timeout=10) # Adiciona timeout de 10 segundos
             response.raise_for_status()
             gz_output_path = output_path + ".Z"
             with open(gz_output_path, 'wb') as f:
@@ -142,11 +143,38 @@ def download_ephemeris_file(target_date, output_path):
             return output_path
         except requests.exceptions.RequestException as e_gz:
             print(f"Erro ao baixar {url_n_gz}: {e_gz}")
-            print("Não foi possível baixar o arquivo de efemérides. Verifique sua conexão ou tente novamente mais tarde.")
+            print("Não foi possível baixar o arquivo de efemérides automaticamente.")
             return None
         except Exception as e_unzip:
             print(f"Erro ao descompactar {gz_output_path}: {e_unzip}")
             return None
+
+def get_manual_ephemeris_file():
+    """
+    Solicita ao usuário o caminho para um arquivo de efemérides baixado manualmente.
+    Valida se o arquivo existe e tem a extensão .n (ou .rnx).
+    """
+    while True:
+        manual_path = input("\nO download automático falhou. Por favor, digite o caminho COMPLETO do arquivo de efemérides (.n ou .rnx) que você baixou manualmente (Ex: C:\\caminho\\para\\brdc1520.25n): ").strip()
+        
+        if not os.path.exists(manual_path):
+            print(f"Erro: O arquivo '{manual_path}' não foi encontrado.")
+            continue
+        
+        if not os.path.isfile(manual_path):
+            print(f"Erro: '{manual_path}' não é um arquivo válido.")
+            continue
+
+        # Verifica se a extensão é .n ou .rnx (comum para arquivos de efemérides)
+        if not (manual_path.lower().endswith('.n') or manual_path.lower().endswith('.rnx')):
+            print("Atenção: O arquivo não tem a extensão .n ou .rnx. Certifique-se de que é um arquivo de efemérides válido.")
+            # Permite ao usuário continuar, mas avisa. Pode ser um arquivo RInex com outra extensão.
+            confirm = input("Deseja continuar com este arquivo? (s/n): ").lower()
+            if confirm != 's':
+                continue
+        
+        print(f"Arquivo de efemérides manual selecionado: {manual_path}")
+        return manual_path
 
 def generate_gps_file(gps_sdr_sim_exe_path, ephemeris_file_path, latitude, longitude, altitude, sim_datetime, output_filename_base):
     """
@@ -187,7 +215,8 @@ def generate_gps_file(gps_sdr_sim_exe_path, ephemeris_file_path, latitude, longi
     except subprocess.CalledProcessError as e:
         print(f"ERRO ao executar gps-sdr-sim. Código de saída: {e.returncode}")
         print(f"Erro de saída (stderr): {e.stderr}")
-        print("Verifique se os parâmetros estão corretos ou se o arquivo .n foi baixado sem problemas.")
+        print("Isso pode indicar um problema com o arquivo de efemérides ou com os parâmetros. ")
+        print("Verifique se o arquivo .n foi baixado/fornecido corretamente e não está corrompido.")
         print("Para depuração, tente executar o gps-sdr-sim manualmente com os mesmos parâmetros no terminal.")
         return None
     except subprocess.TimeoutExpired:
@@ -243,12 +272,17 @@ def copy_files_to_sd_card(c8_file, txt_file, sd_card_root_path):
     os.makedirs(gps_folder_on_sd, exist_ok=True) 
 
     print(f"Copiando '{os.path.basename(c8_file)}' para '{gps_folder_on_sd}'")
-    shutil.copy(c8_file, gps_folder_on_sd)
-    print(f"Copiando '{os.path.basename(txt_file)}' para '{gps_folder_on_sd}'")
-    shutil.copy(txt_file, gps_folder_on_sd)
-    
-    print("Arquivos copiados com sucesso para o cartão SD!")
-    return True
+    try:
+        shutil.copy(c8_file, gps_folder_on_sd)
+        print(f"Copiando '{os.path.basename(txt_file)}' para '{gps_folder_on_sd}'")
+        shutil.copy(txt_file, gps_folder_on_sd)
+        print("Arquivos copiados com sucesso para o cartão SD!")
+        return True
+    except Exception as e:
+        print(f"ERRO ao copiar arquivos para o cartão SD: {e}")
+        print("Verifique as permissões de escrita no cartão SD.")
+        return False
+
 
 # --- FUNÇÃO PRINCIPAL ---
 def main():
@@ -284,12 +318,28 @@ def main():
     ephemeris_filename = f"brdc{get_day_of_year(sim_datetime):03d}0.{str(sim_datetime.year)[2:]}n"
     ephemeris_output_path = os.path.join(OUTPUT_DIR, ephemeris_filename)
 
-    # 6. Baixa o arquivo de efemérides da NASA para a data informada.
+    # 6. Baixa o arquivo de efemérides da NASA para a data informada ou pede ao usuário.
     print("\nEtapa 4: Baixando arquivo de efemérides da NASA...")
     downloaded_ephem_file = download_ephemeris_file(sim_datetime, ephemeris_output_path)
+    
     if not downloaded_ephem_file:
-        print("Falha ao baixar o arquivo de efemérides. O script será encerrado.")
-        sys.exit(1) # Sai com código de erro
+        print("\nO download automático do arquivo de efemérides falhou.")
+        print("Você pode tentar baixá-lo manualmente de uma das seguintes URLs:")
+        # O dia do ano para 2025-06-01 é 152
+        # As URLs são geradas dinamicamente na função download_ephemeris_file
+        # para 2025-06-01, as URLs seriam:
+        # https://cddis.nasa.gov/archive/gnss/data/daily/2025/152/brdc/brdc1520.25n
+        # https://cddis.nasa.gov/archive/gnss/data/daily/2025/152/brdc/brdc1520.25n.Z
+        print(f"- https://cddis.nasa.gov/archive/gnss/data/daily/{sim_datetime.year}/{get_day_of_year(sim_datetime):03d}/brdc/brdc{get_day_of_year(sim_datetime):03d}0.{str(sim_datetime.year)[2:]}n")
+        print(f"- https://cddis.nasa.gov/archive/gnss/data/daily/{sim_datetime.year}/{get_day_of_year(sim_datetime):03d}/brdc/brdc{get_day_of_year(sim_datetime):03d}0.{str(sim_datetime.year)[2:]}n.Z (se baixar este, pode precisar descompactar para .n)")
+        print("Procure pelo arquivo .n ou .rnx.")
+        
+        # Pede ao usuário para fornecer o caminho do arquivo manualmente
+        downloaded_ephem_file = get_manual_ephemeris_file()
+        
+        if not downloaded_ephem_file:
+            print("Nenhum arquivo de efemérides foi fornecido. O script será encerrado.")
+            sys.exit(1) # Sai com código de erro
 
     # 7. Define o nome base para os arquivos de saída .c8 e .txt.
     # O nome pode ser mais descritivo agora que a localização é dinâmica.
@@ -299,7 +349,7 @@ def main():
     print("\nEtapa 5: Gerando arquivo GPS simulado (.c8 e .txt) com gps-sdr-sim...")
     generated_files = generate_gps_file(
         GPS_SDR_SIM_EXECUTABLE, 
-        downloaded_ephem_file, 
+        downloaded_ephem_file, # Usa o arquivo baixado ou o fornecido manualmente
         latitude, longitude, altitude, 
         sim_datetime, 
         output_filename_base
