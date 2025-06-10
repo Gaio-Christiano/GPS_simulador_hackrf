@@ -1,4 +1,5 @@
 # Versão 1.3
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 
 import requests
 import datetime
@@ -39,6 +40,8 @@ SAMPLE_RATE = 2600000       # 2.6 MHz (taxa de amostragem em Hertz)
 CENTER_FREQUENCY = 1575420000 # 1575.42 MHz (frequência central em Hertz para GPS L1)
 
 # --- FUNÇÕES DO SCRIPT ---
+# Versão 1.3
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 
 def get_day_of_year(date=None):
     """
@@ -74,6 +77,9 @@ def download_ephemeris_file(output_path):
     url_n = f"{NASA_CDDIS_URL}{year}/{day_str}/brdc/{ephem_filename_n}"
     url_n_gz = f"{NASA_CDDIS_URL}{year}/{day_str}/brdc/{ephem_filename_n_gz}"
 
+    # Versão 1.3
+    # Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
+
     print(f"Tentando baixar arquivo de efemérides (não comprimido): {url_n}")
     try:
         # Tenta baixar a versão não comprimida (.n)
@@ -98,6 +104,9 @@ def download_ephemeris_file(output_path):
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
             print(f"Arquivo comprimido baixado com sucesso: {gz_output_path}")
+
+            # Versão 1.3
+            # Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 
             # Descompactar o arquivo .Z (que é um gzip)
             print(f"Descompactando {gz_output_path}...")
@@ -140,6 +149,9 @@ def generate_gps_file(ephemeris_file_path, output_filename_base):
     print(f"\nGerando arquivo GPS simulado: {output_c8_path}")
     print(f"Executando comando: {' '.join(command)}")
 
+# Versão 1.3
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
+
     try:
         # Executa o comando no sistema operacional.
         # capture_output=True: captura o que o programa imprime na tela (stdout e stderr).
@@ -174,6 +186,9 @@ def generate_gps_file(ephemeris_file_path, output_filename_base):
     print(f"Arquivo .txt de configuração gerado: {output_txt_path}")
 
     return output_c8_path, output_txt_path
+
+# Versão 1.3
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 
 def find_sd_card_path():
     """
@@ -228,6 +243,9 @@ def copy_files_to_sd_card(c8_file, txt_file, sd_card_root_path):
     
     print("Arquivos copiados com sucesso para o cartão SD!")
     return True
+
+# Versão 1.3
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 
 # --- FUNÇÃO PRINCIPAL ---
 def main():
@@ -287,3 +305,6 @@ def main():
 # Verifica se o script está sendo executado diretamente (não importado como módulo)
 if __name__ == "__main__":
     main()
+
+# Versão 1.3
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.

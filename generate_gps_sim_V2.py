@@ -1,4 +1,5 @@
 # Versão 2.8
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 
 import requests # Importa a biblioteca 'requests' para fazer requisições HTTP (usada para baixar arquivos da internet).
 import datetime # Importa a biblioteca 'datetime' para trabalhar com datas e horas.
@@ -35,6 +36,8 @@ CENTER_FREQUENCY = 1575420000 # 1575.42 MHz (frequência central em Hertz para G
 # Tamanho mínimo esperado para um arquivo de efemérides válido em KB.
 # Arquivos de 11KB geralmente indicam uma página de erro ou redirecionamento.
 MIN_EPHEMERIS_FILE_SIZE_KB = 100 # Um arquivo válido geralmente tem mais de 100 KB.
+# Versão 2.8
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 
 # --- FUNÇÕES AUXILIARES ---
 
@@ -68,6 +71,8 @@ def validate_path(prompt, default_path=None):
         # e confiar que o .exe será executável, mas a verificação de X_OK é mais robusta.
     return path # Retorna o caminho validado.
 
+# Versão 2.8
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 def get_user_coordinates():
     """
     Solicita ao usuário as coordenadas de latitude, longitude e altitude para a simulação.
@@ -92,6 +97,8 @@ def get_user_coordinates():
             print("Entrada inválida. Por favor, digite apenas números para latitude, longitude e altitude.")
             print("Use ponto (.) como separador decimal, não vírgula (,).") # Instrução clara sobre o separador.
 
+# Versão 2.8
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 def get_user_datetime():
     """
     Solicita ao usuário a data e hora de início da simulação.
@@ -107,6 +114,8 @@ def get_user_datetime():
         except ValueError: # Captura o erro se o formato da data ou hora estiver incorreto.
             print("Formato de data ou hora inválido. Por favor, use AAAA-MM-DD e HH:MM:SS.")
 
+# Versão 2.8
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 def download_ephemeris_file(target_date, output_path):
     """
     Tenta baixar o arquivo de efemérides (Broadcast Ephemeris) da NASA para a data alvo.
@@ -135,6 +144,8 @@ def download_ephemeris_file(target_date, output_path):
     url_n = f"{NASA_CDDIS_URL}{year}/{day_str}/brdc/{ephem_filename_n}"
     url_n_gz = f"{NASA_CDDIS_URL}{year}/{day_str}/brdc/{ephem_filename_n_gz}"
     url_n_Z = f"{NASA_CDDIS_URL}{year}/{day_str}/brdc/{ephem_filename_n_Z}"
+    # Versão 2.8
+    # Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 
     # Lista de URLs a tentar baixar, em ordem de preferência (não compactado, depois .gz, depois .Z).
     urls_to_try = [url_n, url_n_gz, url_n_Z]
@@ -152,6 +163,9 @@ def download_ephemeris_file(target_date, output_path):
     print("Atenção: O site CDDIS da NASA (cddis.nasa.gov) agora requer login/senha.")
     print("O download automático pode falhar e baixar uma página HTML de erro de 11KB.")
     print("Se o download automático falhar, você será solicitado a fornecer o arquivo manualmente.")
+
+    # Versão 2.8
+    # Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 
     # Loop através das URLs tentando baixar o arquivo.
     for url in urls_to_try:
@@ -188,7 +202,9 @@ def download_ephemeris_file(target_date, output_path):
             if downloaded_temp_path and os.path.exists(downloaded_temp_path): # Se houver um arquivo parcial baixado...
                 os.remove(downloaded_temp_path) # Limpa qualquer arquivo parcial/inválido.
             continue # Tenta a próxima URL.
-
+    
+    # Versão 2.8
+    # Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
     if not download_successful or not downloaded_temp_path: # Se nenhuma URL resultou em um download bem-sucedido.
         print("Não foi possível baixar o arquivo de efemérides automaticamente de nenhuma URL ou o arquivo é inválido.")
         return None # Retorna None indicando falha no download.
@@ -214,7 +230,8 @@ def download_ephemeris_file(target_date, output_path):
     else:
         print(f"Arquivo de efemérides baixado e pronto: {output_path}") # Se não era compactado, já está pronto.
         return output_path # Retorna o caminho do arquivo.
-
+        # Versão 2.8
+        # Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 def get_manual_ephemeris_file():
     """
     Solicita ao usuário o caminho para um arquivo de efemérides baixado manualmente.
@@ -258,6 +275,8 @@ def get_manual_ephemeris_file():
         print(f"Arquivo de efemérides manual selecionado: {manual_path}") # Confirma o arquivo selecionado.
         return manual_path # Retorna o caminho do arquivo manual.
 
+# Versão 2.8
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 def generate_gps_file(gps_sdr_sim_exe_path, ephemeris_file_path, latitude, longitude, altitude, sim_datetime, output_filename_base):
     """
     Executa o programa gps-sdr-sim.exe para gerar o arquivo de simulação GPS (.c8)
@@ -284,6 +303,8 @@ def generate_gps_file(gps_sdr_sim_exe_path, ephemeris_file_path, latitude, longi
     print(f"\nGerando arquivo GPS simulado: {output_c8_path}") # Informa o nome do arquivo a ser gerado.
     print(f"Executando comando: {' '.join(command)}") # Exibe o comando completo que será executado.
 
+    # Versão 2.8
+    # Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
     try:
         # Executa o comando. capture_output=True redireciona stdout/stderr para variáveis.
         # text=True decodifica a saída como texto. check=True levanta CalledProcessError se o código de saída não for 0.
@@ -323,6 +344,8 @@ def generate_gps_file(gps_sdr_sim_exe_path, ephemeris_file_path, latitude, longi
 
     return output_c8_path, output_txt_path # Retorna os caminhos dos arquivos .c8 e .txt gerados.
 
+# Versão 2.8
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 def find_sd_card_path():
     """
     Solicita ao usuário a letra da unidade do cartão SD para copiar os arquivos.
@@ -375,7 +398,8 @@ def copy_files_to_sd_card(c8_file, txt_file, sd_card_root_path):
         print("Verifique as permissões de escrita no cartão SD.")
         return False # Retorna False indicando falha.
 
-
+# Versão 2.8
+# Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
 # --- FUNÇÃO PRINCIPAL ---
 def main():
     """
@@ -384,7 +408,9 @@ def main():
     """
     print("--- Início da Simulação GPS Automatizada no Windows ---") # Mensagem de início do script.
     print("Este script é para **fins de estudo e proteção contra simulação de GPS**.") # Aviso legal/educacional.
-    print("Ele irá gerar arquivos .c8 e .txt para seu PortaPack H2M com base nas suas entradas.") # Explicação do que o script faz.
+    print("Versão 2.8") #versão do código
+    print("# Desenvolvido por ** Christiano T.Gaio ** para estudos na área de segurança digital.")
+    print("Ele irá gerar arquivos .c8 e .txt para seu PortaPack H2M, H3, H4 ou H4M com base nas suas entradas.") # Explicação do que o script faz.
 
     # 1. Verifica e obtém o caminho para o executável gps-sdr-sim.exe.
     # Se o caminho padrão não funcionar, ele solicitará ao usuário.
@@ -414,6 +440,8 @@ def main():
     # 6. Baixa o arquivo de efemérides da NASA para a data informada ou pede ao usuário para fornecê-lo.
     downloaded_ephem_file = download_ephemeris_file(sim_datetime, ephemeris_output_path) # Tenta baixar o arquivo.
     
+    # Versão 2.8
+    # Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
     if not downloaded_ephem_file: # Se o download automático falhar (função retornou None ou arquivo inválido)...
         print("\nO download automático do arquivo de efemérides falhou ou o arquivo baixado é inválido.")
         # Pede ao usuário para fornecer o caminho do arquivo manualmente.
@@ -459,12 +487,13 @@ def main():
         else: # Se a entrada for inválida.
             print("Opção inválida. Por favor, digite 's' para sim ou 'n' para não.")
     # --- FIM DA NOVA ETAPA DE CÓPIA ---
-
+    # Versão 2.8
+    # Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
     print("\n--- Simulação GPS Automatizada Concluída! ---") # Mensagem de conclusão.
     print(f"Os arquivos necessários foram gerados e estão em: {OUTPUT_DIR}") # Informa onde os arquivos foram salvos.
     print(f"Arquivos gerados: {os.path.basename(c8_file)} e {os.path.basename(txt_file)}")
     
-    print("\nPara usar estes arquivos com seu PortaPack H2M:")
+    print("\nPara usar estes arquivos com seu PortaPack H2M, H3, H4 ou H4M:")
     print("1. Remova o cartão SD do computador COM SEGURANÇA (use 'Ejetar').")
     print("2. Insira-o no PortaPack H2M.")
     print("3. Ligue o PortaPack.")
@@ -475,8 +504,16 @@ def main():
     print(f"\nLocalização que será simulada: Latitude={latitude}, Longitude={longitude}, Altitude={altitude}m")
     print(f"Data e Hora de simulação: {sim_datetime.strftime('%Y-%m-%d %H:%M:%S')}")
 
+    print("Este script foi desenvolvido para **fins de estudo e proteção contra simulação de GPS**.") # Aviso legal/educacional.
+    print("Versão 2.8") #versão do código
+    print("# Desenvolvido por ** Christiano T.Gaio ** para estudos na área de segurança digital.")
+    print("Ele gerou arquivos .c8 e .txt para seu PortaPack H2M, H3, H4 ou H4M com base nas suas entradas.")
+
 
 # Verifica se o script está sendo executado diretamente (ou seja, não foi importado como um módulo em outro script).
 # Isso garante que a função main() seja chamada apenas quando o script é executado por si só.
 if __name__ == "__main__":
     main() # Chama a função principal para iniciar a execução do script.
+
+    # Versão 2.8
+    # Desenvolvido por "Christiano T.Gaio" para estudos na área de segurança digital.
