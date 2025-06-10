@@ -24,7 +24,6 @@ NASA_CDDIS_URL = "https://cddis.nasa.gov/archive/gnss/data/daily/"
 # os.path.join() constrói o caminho completo para a subpasta "gps_sim_output".
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gps_sim_output")
 
-
 # Taxa de amostragem e frequência central para o HackRF (hardware SDR).
 # Estes valores são fixos para a simulação de GPS L1 e não devem ser alterados,
 # pois são padrões da especificação do sinal GPS.
@@ -156,61 +155,63 @@ def download_ephemeris_file(target_date, output_path):
     for url in urls_to_try:
         print(f"Tentando baixar: {url}") # Mostra qual URL está sendo tentada.
         try:
+            # Faz a requisição GET para a URL com stream=True para lidar com arquivos grandes
+            # e um timeout para evitar que a requisição fique travada indefinidamente.
             response = requests.get(url, stream=True, timeout=15)
-            response.raise_for_status() # Lança uma exceção HTTPError se o status da resposta for 4xx ou 5xx (erro).
+            # Lança uma exceção HTTPError se o status da resposta for 4xx ou 5xx (erro no servidor).
+            response.raise_for_status() 
 
-            downloaded_temp_path = temp_paths[url]
+            downloaded_temp_path = temp_paths[url] # Define o caminho temporário do arquivo.
+            # Abre o arquivo em modo de escrita binária ('wb').
             with open(downloaded_temp_path, 'wb') as f:
+                # Itera sobre o conteúdo da resposta em blocos de 8KB.
                 for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
+                    f.write(chunk) # Escreve cada bloco no arquivo.
             
             # Verifica o tamanho do arquivo baixado. Se for muito pequeno, é provável que seja uma página de erro.
-            file_size_kb = os.path.getsize(downloaded_temp_path) / 1024
-            if file_size_kb < MIN_EPHEMERIS_FILE_SIZE_KB:
+            file_size_kb = os.path.getsize(downloaded_temp_path) / 1024 # Obtém o tamanho em KB.
+            if file_size_kb < MIN_EPHEMERIS_FILE_SIZE_KB: # Compara com o tamanho mínimo esperado.
                 print(f"Aviso: Arquivo baixado '{os.path.basename(downloaded_temp_path)}' tem apenas {file_size_kb:.2f} KB.")
                 print("Isso geralmente indica que o download falhou e o que foi baixado é uma página de erro/login.")
                 os.remove(downloaded_temp_path) # Remove o arquivo inválido.
                 download_successful = False # Marca como falha.
-                continue # Tenta a próxima URL.
+                continue # Tenta a próxima URL na lista.
             
-            print(f"Download bruto concluído: {downloaded_temp_path} ({file_size_kb:.2f} KB)")
-            download_successful = True
-            break
-        except requests.exceptions.RequestException as e:
-            print(f"Erro ao baixar {url}: {e}")
-            download_successful = False
-            if downloaded_temp_path and os.path.exists(downloaded_temp_path):
+            print(f"Download bruto concluído: {downloaded_temp_path} ({file_size_kb:.2f} KB)") # Confirma download.
+            download_successful = True # Marca download como bem-sucedido.
+            break # Sai do loop, pois um arquivo válido foi baixado.
+        except requests.exceptions.RequestException as e: # Captura exceções relacionadas a requisições (conexão, timeout, etc.).
+            print(f"Erro ao baixar {url}: {e}") # Informa o erro específico.
+            download_successful = False # Marca como falha.
+            if downloaded_temp_path and os.path.exists(downloaded_temp_path): # Se houver um arquivo parcial baixado...
                 os.remove(downloaded_temp_path) # Limpa qualquer arquivo parcial/inválido.
             continue # Tenta a próxima URL.
 
-    if not download_successful or not downloaded_temp_path:
+    if not download_successful or not downloaded_temp_path: # Se nenhuma URL resultou em um download bem-sucedido.
         print("Não foi possível baixar o arquivo de efemérides automaticamente de nenhuma URL ou o arquivo é inválido.")
-        return None
+        return None # Retorna None indicando falha no download.
 
     # Tenta descompactar o arquivo se ele tiver uma extensão de compressão (.gz ou .Z).
     if downloaded_temp_path.lower().endswith('.gz') or downloaded_temp_path.lower().endswith('.Z'):
-        print(f"Descompactando {downloaded_temp_path} para {output_path}...")
+        print(f"Descompactando {downloaded_temp_path} para {output_path}...") # Informa sobre a descompactação.
         try:
+            # Abre o arquivo compactado em modo de leitura binária ('rb') usando gzip.
             with gzip.open(downloaded_temp_path, 'rb') as f_in:
+                # Abre o arquivo de saída em modo de escrita binária ('wb').
                 with open(output_path, 'wb') as f_out:
-                    shutil.copyfileobj(f_in, f_out)
-            os.remove(downloaded_temp_path)
-            print(f"Arquivo de efemérides descompactado com sucesso: {output_path}")
-            return output_path
-
-        except requests.exceptions.RequestException as e_gz:
-            print(f"Erro ao baixar {url_n_gz}: {e_gz}")
-            print("Não foi possível baixar o arquivo de efemérides automaticamente.")
-            return None
-        except Exception as e_unzip:
-            print(f"Erro ao descompactar {downloaded_temp_path}: {e_unzip}")
+                    shutil.copyfileobj(f_in, f_out) # Copia o conteúdo descompactado.
+            os.remove(downloaded_temp_path) # Remove o arquivo compactado original após a descompactação.
+            print(f"Arquivo de efemérides descompactado com sucesso: {output_path}") # Confirma a descompactação.
+            return output_path # Retorna o caminho do arquivo descompactado.
+        except Exception as e_unzip: # Captura qualquer erro durante a descompactação.
+            print(f"Erro ao descompactar {downloaded_temp_path}: {e_unzip}") # Informa o erro.
             print("O arquivo baixado pode estar corrompido ou não é um gzip válido.")
-            if os.path.exists(output_path):
-                os.remove(output_path)
-            return None
+            if os.path.exists(output_path): # Se um arquivo de saída parcial foi criado...
+                os.remove(output_path) # Remove-o.
+            return None # Retorna None indicando falha na descompactação.
     else:
-        print(f"Arquivo de efemérides baixado e pronto: {output_path}")
-        return output_path
+        print(f"Arquivo de efemérides baixado e pronto: {output_path}") # Se não era compactado, já está pronto.
+        return output_path # Retorna o caminho do arquivo.
 
 def get_manual_ephemeris_file():
     """
@@ -225,61 +226,35 @@ def get_manual_ephemeris_file():
     print(" - Use um navegador web para baixar o arquivo mais recente (ex: brdcJJJ0.YYn ou brdcJJJ0.YYn.gz) para a data desejada.")
     print("Lembre-se de DESCOMPACTAR arquivos .gz ou .Z para .n antes de usar aqui.")
     
-    while True:
+    while True: # Loop contínuo até que um caminho de arquivo válido seja fornecido.
         manual_path = input("Digite o caminho COMPLETO para o arquivo de efemérides (.n ou .rnx) que você baixou manualmente (Ex: C:\\caminho\\para\\brdc1520.25n): ").strip()
         
-        if not os.path.exists(manual_path):
+        if not os.path.exists(manual_path): # Verifica se o arquivo existe.
             print(f"Erro: O arquivo '{manual_path}' não foi encontrado.")
-            continue
+            continue # Pede novamente.
         
-        if not os.path.isfile(manual_path):
+        if not os.path.isfile(manual_path): # Verifica se o caminho aponta para um arquivo (não um diretório).
             print(f"Erro: '{manual_path}' não é um arquivo válido.")
-            continue
+            continue # Pede novamente.
 
         # Verifica o tamanho do arquivo manual para garantir que não é um arquivo "vazio" ou corrompido.
-        file_size_kb = os.path.getsize(manual_path) / 1024
-        if file_size_kb < MIN_EPHEMERIS_FILE_SIZE_KB:
+        file_size_kb = os.path.getsize(manual_path) / 1024 # Obtém o tamanho em KB.
+        if file_size_kb < MIN_EPHEMERIS_FILE_SIZE_KB: # Compara com o tamanho mínimo esperado.
             print(f"Aviso: O arquivo selecionado '{os.path.basename(manual_path)}' tem apenas {file_size_kb:.2f} KB.")
             print("Este tamanho é incomum para um arquivo de efemérides válido. Ele pode estar corrompido ou ser um erro.")
             confirm = input("Deseja continuar com este arquivo mesmo assim? (s/n): ").lower()
-            if confirm != 's':
+            if confirm != 's': # Se o usuário não confirmar, pede novamente.
                 continue
 
+        # Verifica a extensão do arquivo.
         if not (manual_path.lower().endswith('.n') or manual_path.lower().endswith('.rnx')):
             print("Atenção: O arquivo não tem a extensão .n ou .rnx. Certifique-se de que é um arquivo de efemérides válido.")
             confirm = input("Deseja continuar com este arquivo? (s/n): ").lower()
-            if confirm != 's':
+            if confirm != 's': # Se o usuário não confirmar, pede novamente.
                 continue
         
-        print(f"Arquivo de efemérides manual selecionado: {manual_path}")
-        return manual_path
-
-def get_manual_ephemeris_file():
-    """
-    Solicita ao usuário o caminho para um arquivo de efemérides baixado manualmente.
-    Valida se o arquivo existe e tem a extensão .n (ou .rnx).
-    """
-    while True:
-        manual_path = input("\nO download automático falhou. Por favor, digite o caminho COMPLETO do arquivo de efemérides (.n ou .rnx) que você baixou manualmente (Ex: C:\\caminho\\para\\brdc1520.25n): ").strip()
-        
-        if not os.path.exists(manual_path):
-            print(f"Erro: O arquivo '{manual_path}' não foi encontrado.")
-            continue
-        
-        if not os.path.isfile(manual_path):
-            print(f"Erro: '{manual_path}' não é um arquivo válido.")
-            continue
-
-        # Verifica se a extensão é .n ou .rnx (comum para arquivos de efemérides)
-        if not (manual_path.lower().endswith('.n') or manual_path.lower().endswith('.rnx')):
-            print("Atenção: O arquivo não tem a extensão .n ou .rnx. Certifique-se de que é um arquivo de efemérides válido.")
-            # Permite ao usuário continuar, mas avisa. Pode ser um arquivo RInex com outra extensão.
-            confirm = input("Deseja continuar com este arquivo? (s/n): ").lower()
-            if confirm != 's':
-                continue
-        
-        print(f"Arquivo de efemérides manual selecionado: {manual_path}")
-        return manual_path
+        print(f"Arquivo de efemérides manual selecionado: {manual_path}") # Confirma o arquivo selecionado.
+        return manual_path # Retorna o caminho do arquivo manual.
 
 def generate_gps_file(gps_sdr_sim_exe_path, ephemeris_file_path, latitude, longitude, altitude, sim_datetime, output_filename_base):
     """
@@ -308,9 +283,11 @@ def generate_gps_file(gps_sdr_sim_exe_path, ephemeris_file_path, latitude, longi
     print(f"Executando comando: {' '.join(command)}") # Exibe o comando completo que será executado.
 
     try:
+        # Executa o comando. capture_output=True redireciona stdout/stderr para variáveis.
+        # text=True decodifica a saída como texto. check=True levanta CalledProcessError se o código de saída não for 0.
+        # timeout=300 define um tempo limite de 5 minutos para a execução.
         process = subprocess.run(command, capture_output=True, text=True, check=True, timeout=300) 
         print("Saída do gps-sdr-sim:") # Exibe a saída padrão do gps-sdr-sim (geralmente progresso).
-
         print(process.stdout)
         if process.stderr: # Se houver saída de erro (stderr)...
             print("Erros (stderr) do gps-sdr-sim:") # Exibe os erros do gps-sdr-sim.
@@ -396,18 +373,6 @@ def copy_files_to_sd_card(c8_file, txt_file, sd_card_root_path):
         print("Verifique as permissões de escrita no cartão SD.")
         return False # Retorna False indicando falha.
 
-    print(f"Copiando '{os.path.basename(c8_file)}' para '{gps_folder_on_sd}'")
-    try:
-        shutil.copy(c8_file, gps_folder_on_sd)
-        print(f"Copiando '{os.path.basename(txt_file)}' para '{gps_folder_on_sd}'")
-        shutil.copy(txt_file, gps_folder_on_sd)
-        print("Arquivos copiados com sucesso para o cartão SD!")
-        return True
-    except Exception as e:
-        print(f"ERRO ao copiar arquivos para o cartão SD: {e}")
-        print("Verifique as permissões de escrita no cartão SD.")
-        return False
-
 
 # --- FUNÇÃO PRINCIPAL ---
 def main():
@@ -415,7 +380,6 @@ def main():
     Função principal que orquestra todo o processo de geração do sinal GPS simulado e cópia dos arquivos.
     Ela guia o usuário através das etapas necessárias e gerencia as chamadas às outras funções.
     """
-
     print("--- Início da Simulação GPS Automatizada no Windows ---") # Mensagem de início do script.
     print("Este script é para **fins de estudo e proteção contra simulação de GPS**.") # Aviso legal/educacional.
     print("Ele irá gerar arquivos .c8 e .txt para seu PortaPack H2M com base nas suas entradas.") # Explicação do que o script faz.
@@ -465,7 +429,6 @@ def main():
     print("\nEtapa 5: Gerando arquivo GPS simulado (.c8 e .txt) com gps-sdr-sim...")
     generated_files = generate_gps_file( # Chama a função para gerar os arquivos.
         GPS_SDR_SIM_EXECUTABLE, 
-
         downloaded_ephem_file, # Usa o arquivo de efemérides que foi baixado ou fornecido manualmente.
         latitude, longitude, altitude, 
         sim_datetime, 
@@ -477,29 +440,36 @@ def main():
 
     c8_file, txt_file = generated_files # Desempacota os arquivos gerados.
 
-    # 9. Copia os arquivos gerados para o cartão SD do PortaPack H2M.
-    print("\nEtapa 6: Copiando arquivos para o cartão SD do PortaPack...")
-    sd_card_path = find_sd_card_path() # Obtém o caminho do cartão SD.
-
-    # Tenta copiar os arquivos para o cartão SD. Se falhar, instrui o usuário a fazer manualmente.
-    if not copy_files_to_sd_card(c8_file, txt_file, sd_card_path):
-        print("\nOps! Não foi possível copiar os arquivos para o cartão SD automaticamente.")
-        print(f"Por favor, copie os arquivos manualmente para a pasta 'gps' do seu cartão SD.")
-        print(f"Os arquivos estão localizados em: {OUTPUT_DIR}")
-        print(f"Arquivos a copiar: {os.path.basename(c8_file)} e {os.path.basename(txt_file)}")
-        print("\nVerifique se o cartão SD está conectado e o caminho da unidade está correto!")
-        # Não sai com erro fatal aqui, apenas instrui o usuário a fazer manualmente,
-        # pois a geração dos arquivos já foi concluída.
+    # 9. Adiciona a opção de copiar para o cartão SD.
+    print("\nEtapa 6: Cópia para o cartão SD do PortaPack.")
+    while True: # Loop para garantir uma entrada válida do usuário.
+        copy_to_sd_choice = input("Deseja copiar os arquivos gerados para o seu cartão SD agora? (s/n): ").lower().strip()
+        if copy_to_sd_choice in ('s', 'sim'): # Se o usuário escolher sim.
+            sd_card_path = find_sd_card_path() # Tenta encontrar o caminho do SD.
+            if sd_card_path: # Se o caminho foi encontrado.
+                copy_files_to_sd_card(c8_file, txt_file, sd_card_path) # Tenta copiar os arquivos.
+            else: # Se o caminho não foi encontrado (find_sd_card_path pode retornar None ou erro).
+                print("\nNão foi possível obter o caminho do cartão SD. Você precisará copiar os arquivos manualmente.")
+            break # Sai do loop de escolha.
+        elif copy_to_sd_choice in ('n', 'nao', 'não'): # Se o usuário escolher não.
+            print("Cópia para o cartão SD ignorada. Você pode copiar os arquivos manualmente mais tarde.")
+            break # Sai do loop de escolha.
+        else: # Se a entrada for inválida.
+            print("Opção inválida. Por favor, digite 's' para sim ou 'n' para não.")
+    # --- FIM DA NOVA ETAPA DE CÓPIA ---
 
     print("\n--- Simulação GPS Automatizada Concluída! ---") # Mensagem de conclusão.
-    print("Os arquivos necessários foram gerados e, se possível, copiados para o cartão SD.")
-    print("\nPróximo passo CRÍTICO: Remova o cartão SD do computador COM SEGURANÇA (use 'Ejetar').")
-    print("Em seguida, insira-o no PortaPack H2M e siga os passos no dispositivo:")
-    print("1. Ligue o PortaPack.")
-    print("2. Navegue para 'Transmit' -> 'GPS Sim'.")
-    print(f"3. Selecione 'Load file' e escolha '{output_filename_base}.c8' (localizado na pasta 'gps').")
-    print("4. Ajuste o 'TX Gain' com cautela (comece em 0 dB).")
-    print("5. Pressione 'Start' para iniciar a transmissão.")
+    print(f"Os arquivos necessários foram gerados e estão em: {OUTPUT_DIR}") # Informa onde os arquivos foram salvos.
+    print(f"Arquivos gerados: {os.path.basename(c8_file)} e {os.path.basename(txt_file)}")
+    
+    print("\nPara usar estes arquivos com seu PortaPack H2M:")
+    print("1. Remova o cartão SD do computador COM SEGURANÇA (use 'Ejetar').")
+    print("2. Insira-o no PortaPack H2M.")
+    print("3. Ligue o PortaPack.")
+    print("4. Navegue para 'Transmit' -> 'GPS Sim'.")
+    print(f"5. Selecione 'Load file' e escolha '{output_filename_base}.c8' (localizado na pasta 'gps' se você copiou para o SD).")
+    print("6. Ajuste o 'TX Gain' com cautela (comece em 0 dB).")
+    print("7. Pressione 'Start' para iniciar a transmissão.")
     print(f"\nLocalização que será simulada: Latitude={latitude}, Longitude={longitude}, Altitude={altitude}m")
     print(f"Data e Hora de simulação: {sim_datetime.strftime('%Y-%m-%d %H:%M:%S')}")
 
