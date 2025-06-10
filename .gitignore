@@ -1,0 +1,5 @@
+# Ignorar arquivos de saída do simulador GPS
+#gps_sim_output/  pasta que não deve ir para o Github
+*.c8
+
+# Adicione outros padrões de arquivos gerados que não devem ir para o Git

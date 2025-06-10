@@ -1,0 +1,77 @@
+F:\GPS_Simulator_Python\gps-sdr-sim__.exe    arquivo menor
+
+F:\GPS_Simulator_Python\gps-sdr-sim_.exe    arquivo maior
+
+
+
+git add .
+
+git commit -m "feat: Adicionado aviso de código para estudos e correção de bugs"
+
+git push origin main
+
+
+
+
+Etapas para enviar o código para seu repositório GitHub:
+1 - Clone o repositório:
+
+bash
+
+git clone https://github.com/Gaio-Christiano/GPS_simulador_hackrf.git
+cd GPS_simulador_hackrf
+
+
+2 - Copie seu arquivo Python para o repositório clonado:
+
+bash
+
+cp /caminho/para/seu/script.py .  # substitua pelo caminho correto
+
+3 - Adicione os arquivos:
+
+bash
+
+git add .
+
+4 - Faça um commit com uma mensagem:
+
+bash
+
+git commit -m "Adiciona script de geração de sinais GPS para HackRF"
+
+5 - Envie para o GitHub:
+
+bash
+
+git push origin main
+
+📝 2. Criar o README.md
+Aqui está um exemplo de conteúdo para seu README.md:
+
+markdown
+
+# Simulador de Sinal GPS para HackRF
+
+Este repositório contém um script em Python para gerar sinais simulados de GPS utilizando o executável [`gps-sdr-sim`](https://github.com/osqzss/gps-sdr-sim) e o dispositivo SDR [HackRF One](https://greatscottgadgets.com/hackrf/). É ideal para fins de estudo, análise e testes de equipamentos receptores de GPS em ambientes controlados.
+
+## Funcionalidades
+
+- Download automático de efemérides (arquivos .n/.Z) da NASA.
+- Permite configurar coordenadas (latitude, longitude, altitude).
+- Permite escolher data e hora da simulação.
+- Gera arquivos binários `.c8` prontos para transmissão via HackRF.
+- Criação de arquivos de configuração compatíveis com PortaPack Mayhem.
+
+## Pré-requisitos
+
+- Python 3.6+
+- `gps-sdr-sim.exe` disponível localmente (especifique o caminho).
+- HackRF One com firmware atualizado.
+- (Opcional) PortaPack com firmware Mayhem.
+
+## Execução
+
+1. Execute o script:
+```bash
+python simulador_gps.py
