@@ -1,3 +1,5 @@
+# Versão 2.8
+
 import requests # Importa a biblioteca 'requests' para fazer requisições HTTP (usada para baixar arquivos da internet).
 import datetime # Importa a biblioteca 'datetime' para trabalhar com datas e horas.
 import os # Importa a biblioteca 'os' para interagir com o sistema operacional (caminhos de arquivos, diretórios, etc.).
