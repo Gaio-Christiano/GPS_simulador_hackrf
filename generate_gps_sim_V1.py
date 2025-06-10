@@ -1,3 +1,5 @@
+# Versão 1.3
+
 import requests
 import datetime
 import os
@@ -128,7 +130,7 @@ def generate_gps_file(ephemeris_file_path, output_filename_base):
     # -b: profundidade de bits (8 bits é o padrão e recomendado para HackRF)
     # -o: caminho para o arquivo de saída .c8
     command = [
-        GPS_SDR_SIM_EXECUTABLE = r"F:\GPS_Simulator_Python\gps-sdr-sim.exe",
+        GPS_SDR_SIM_EXECUTABLE = r"F:\GPS_Simulator_Python\gps-sdr-sim_.exe",
         "-e", ephemeris_file_path,
         "-l", f"{TARGET_LATITUDE},{TARGET_LONGITUDE},{TARGET_ALTITUDE}",
         "-b", "8",
