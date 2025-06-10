@@ -406,11 +406,11 @@ def main():
     Função principal que orquestra todo o processo de geração do sinal GPS simulado e cópia dos arquivos.
     Ela guia o usuário através das etapas necessárias e gerencia as chamadas às outras funções.
     """
-    print("--- Início da Simulação GPS Automatizada no Windows ---") # Mensagem de início do script.
-    print("Este script é para **fins de estudo e proteção contra simulação de GPS**.") # Aviso legal/educacional.
-    print("Versão 2.8") #versão do código
-    print("# Desenvolvido por ** Christiano T.Gaio ** para estudos na área de segurança digital.")
-    print("Ele irá gerar arquivos .c8 e .txt para seu PortaPack H2M, H3, H4 ou H4M com base nas suas entradas.") # Explicação do que o script faz.
+    print("\n--- Início da Simulação GPS Automatizada no Windows ---") # Mensagem de início do script.
+    print("\nEste script é para **fins de estudo e proteção contra simulação de GPS**.") # Aviso legal/educacional.
+    print("\nVersão 2.8") #versão do código
+    print("\n# Desenvolvido por ** Christiano T.Gaio ** para estudos na área de segurança digital.")
+    print("\nEle irá gerar arquivos .c8 e .txt para seu PortaPack H2M, H3, H4 ou H4M com base nas suas entradas.") # Explicação do que o script faz.
 
     # 1. Verifica e obtém o caminho para o executável gps-sdr-sim.exe.
     # Se o caminho padrão não funcionar, ele solicitará ao usuário.
@@ -504,10 +504,10 @@ def main():
     print(f"\nLocalização que será simulada: Latitude={latitude}, Longitude={longitude}, Altitude={altitude}m")
     print(f"Data e Hora de simulação: {sim_datetime.strftime('%Y-%m-%d %H:%M:%S')}")
 
-    print("Este script foi desenvolvido para **fins de estudo e proteção contra simulação de GPS**.") # Aviso legal/educacional.
-    print("Versão 2.8") #versão do código
-    print("# Desenvolvido por ** Christiano T.Gaio ** para estudos na área de segurança digital.")
-    print("Ele gerou arquivos .c8 e .txt para seu PortaPack H2M, H3, H4 ou H4M com base nas suas entradas.")
+    print("\nEste script foi desenvolvido para **fins de estudo e proteção contra simulação de GPS**.") # Aviso legal/educacional.
+    print("\nVersão 2.8") #versão do código
+    print("\n# Desenvolvido por ** Christiano T.Gaio ** para estudos na área de segurança digital.")
+    print("\nEle gerou arquivos .c8 e .txt para seu PortaPack H2M, H3, H4 ou H4M com base nas suas entradas.")
 
 
 # Verifica se o script está sendo executado diretamente (ou seja, não foi importado como um módulo em outro script).

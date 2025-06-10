@@ -11,6 +11,7 @@ git commit -m "feat: Adicionado aviso de código para estudos e correção de bu
 git push origin main
 
 
+pyinstaller --onefile generate_gps_sim_V2.py    #gerar o executável do código
 
 
 Etapas para enviar o código para seu repositório GitHub:
