@@ -75,3 +75,4 @@ Este repositório contém um script em Python para gerar sinais simulados de GPS
 1. Execute o script:
 ```bash
 python simulador_gps.py
+
